@@ -74,4 +74,4 @@ def start_gui(data_type):
 
 if __name__ == "__main__":
     # Nhớ thay đổi data_type để thu thập dữ liệu cho tục (1) hoặc không tục (2)
-    start_gui(1)
+    start_gui(0)
