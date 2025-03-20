@@ -31,16 +31,16 @@ while Is_collecting and current_index < len(bad_word):
     word = bad_word[current_index]
     index_word = [f"0{x+1}" for x in range(len(bad_word))]
     file_name = os.path.join(DATA_DIR, f'{index_word[current_index]}.csv')
-    video_file = os.path.join(DATA_DIR, f'{index_word[current_index]}.avi')
+    # video_file = os.path.join(DATA_DIR, f'{index_word[current_index]}.avi')
 
     # Lấy thông số video
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
-    fps = 20  # Số khung hình trên giây
+    # fps = 20  # Số khung hình trên giây
 
     # Định dạng codec và tạo đối tượng VideoWriter
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
+    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    # out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
 
     with open(file_name, "w", newline="") as file:
         writer = csv.writer(file)
@@ -76,8 +76,8 @@ while Is_collecting and current_index < len(bad_word):
 
             # Chuyển lại từ PIL sang OpenCV
             image_with_points = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-            bounding_face = tool.draw_bounding_box()
-            bounding_face = cv2.cvtColor(bounding_face, cv2.COLOR_BGR2RGB)
+            # bounding_face = tool.draw_bounding_box()
+            # bounding_face = cv2.cvtColor(bounding_face, cv2.COLOR_BGR2RGB)
 
             # Hiển thị image_with_points với text trên cửa sổ Mouth Points
             cv2.imshow("Mouth Points", image_with_points)
@@ -102,16 +102,16 @@ while Is_collecting and current_index < len(bad_word):
                 print("Dừng thu thập dữ liệu.")
                 Is_collecting = False
                 cap.release()
-                out.release()
+                # out.release()
                 cv2.destroyAllWindows()
                 exit()
 
             if saving:
                 if mouth_points:
                     writer.writerow(mouth_points)  # Lưu dữ liệu vào CSV
-                    out.write(bounding_face)  # Ghi frame vào video (frame gốc từ webcam)
+                    # out.write(bounding_face)  # Ghi frame vào video (frame gốc từ webcam)
 
-    out.release()  # Đóng file video
+    # out.release()  # Đóng file video
     
 cap.release()
 cv2.destroyAllWindows()
