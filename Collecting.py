@@ -1,77 +1,117 @@
 import cv2
 import csv
 import os
-import tkinter as tk
-from tkinter import simpledialog
 from tool import TOOL
+import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
-# Khởi tạo TOOL
 tool = TOOL()
 
-# data_type = 1 là tục và ngược lại
-def capture_data(data_type):
-    # Hiển thị hộp thoại để nhập tên dữ liệu
-    data_label = simpledialog.askstring(
-        "Enter data", "Name of data:")
-    if not data_label:
-        return
-    data_label = data_label.strip().replace(" ", "_")
-    # Tạo đường dẫn cho tệp CSV
-    if data_type == 1:
-        file_name = os.path.join(
-            r"DATA_TUC", f"{data_label}.csv")
-    else:
-        file_name = os.path.join(
-            r"DATA_KHONG_TUC", f"{data_label}.csv")
+# Đọc danh sách từ xấu
+bad_word = pd.read_csv(r"bad_words.csv")
+bad_word = bad_word.values.flatten()
+current_index = 0
 
-    cap = cv2.VideoCapture(0)
+# Thư mục lưu dữ liệu
+DATA_DIR = r"DATA_TUC"
+Is_collecting = True
+saving = False
 
-    # Mở tệp CSV để ghi dữ liệu
-    with open(file_name, "a", newline="") as file:
+# Khởi tạo camera
+cap = cv2.VideoCapture(0)
+cv2.namedWindow('Mouth Points')
+
+# Đường dẫn đến font hỗ trợ tiếng Việt
+font_path = "arial.ttf"  # Thay bằng đường dẫn font của bạn nếu cần
+font_size = 30
+font = ImageFont.truetype(font_path, font_size)
+
+while Is_collecting and current_index < len(bad_word):
+    word = bad_word[current_index]
+    index_word = [f"0{x+1}" for x in range(len(bad_word))]
+    file_name = os.path.join(DATA_DIR, f'{index_word[current_index]}.csv')
+    video_file = os.path.join(DATA_DIR, f'{index_word[current_index]}.avi')
+
+    # Lấy thông số video
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    fps = 20  # Số khung hình trên giây
+
+    # Định dạng codec và tạo đối tượng VideoWriter
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
+
+    with open(file_name, "w", newline="") as file:
         writer = csv.writer(file)
+        word = bad_word[current_index]
+        print(f"Đang chuẩn bị thu thập dữ liệu cho từ: {word}")
 
-        while cap.isOpened():
+        while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
             frame = cv2.flip(frame, 1)
-
             tool.set_input_image(frame)  # Truyền ảnh vào công cụ TOOL
             mouth_points = tool.point_output()  # Lấy ra các điểm ảnh của miệng
-            writer.writerow(mouth_points)  # Ghi dữ liệu vào tệp CSV
 
-            image_with_points = tool.pic_draw_point()  # Vẽ các điểm trên hình ảnh
-            # Hiển thị hình ảnh với các điểm
+            # Lấy hình ảnh với các điểm miệng đã được vẽ
+            image_with_points = tool.pic_draw_point()
+
+            # Chuyển image_with_points từ OpenCV (BGR) sang PIL (RGB)
+            image_rgb = cv2.cvtColor(image_with_points, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(image_rgb)
+            draw = ImageDraw.Draw(pil_image)
+
+           # Vẽ văn bản lên ảnh chính (frame)
+            draw.text((50, 10), "Nhấn S để bắt đầu thu thập dữ liệu",
+                      font=font, fill=(255, 0, 0))  # Đỏ
+            draw.text((50, 40), f"Nói: {bad_word[current_index]}",
+                      font=font, fill=(0, 255, 0))  # Xanh lá
+            draw.text((50, 70), f"Nhấn B để nếu muốn nói lại",
+                      font=font, fill=(0, 255, 0))  # Xanh lá
+            draw.text((50, 100), "Nhấn D để chuyển sang từ tiếp theo",
+                      font=font, fill=(0, 0, 255))  # Xanh dương
+
+            # Chuyển lại từ PIL sang OpenCV
+            image_with_points = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+            bounding_face = tool.draw_bounding_box()
+            bounding_face = cv2.cvtColor(bounding_face, cv2.COLOR_BGR2RGB)
+
+            # Hiển thị image_with_points với text trên cửa sổ Mouth Points
             cv2.imshow("Mouth Points", image_with_points)
 
-            # Nếu người dùng nhấn phím 'q', thoát khỏi vòng lặp
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord('s'):
+                saving = True
+                print(f"Bắt đầu lưu dữ liệu cho từ: {word}")
+
+            elif key == ord('d'):
+                saving = False
+                current_index += 1
+                print(f"Hoàn tất lưu dữ liệu cho từ: {word}. Chuyển sang từ tiếp theo...")
                 break
+            elif key == ord("b"):
+                if current_index >0:
+                    current_index -= 1
+                print("Quay lại từ trước đó")
+                break
+            elif key == ord('q'):  # Nhấn 'q' để thoát toàn bộ chương trình
+                print("Dừng thu thập dữ liệu.")
+                Is_collecting = False
+                cap.release()
+                out.release()
+                cv2.destroyAllWindows()
+                exit()
 
-    # Giải phóng tài nguyên camera và đóng cửa sổ hiển thị
-    cap.release()
-    cv2.destroyAllWindows()
+            if saving:
+                if mouth_points:
+                    writer.writerow(mouth_points)  # Lưu dữ liệu vào CSV
+                    out.write(bounding_face)  # Ghi frame vào video (frame gốc từ webcam)
 
-
-def start_gui(data_type):
-    root = tk.Tk()
-    root.title("Collecting mouth data")
-    root.geometry("1000x300")  # Kích thước cửa sổ
-
-    # Nút bấm để bắt đầu thu thập dữ liệu
-    btn_capture = tk.Button(
-        root, text="Starting collecting data", command= lambda : capture_data(data_type))
-    btn_capture.pack(pady=20)
-
-    # Nút bấm để thoát ứng dụng
-    btn_quit = tk.Button(root, text="Exit", command=root.quit)
-    btn_quit.pack()
-
-    # Chạy vòng lặp chính của giao diện
-    root.mainloop()
-
-
-if __name__ == "__main__":
-    # Nhớ thay đổi data_type để thu thập dữ liệu cho tục (1) hoặc không tục (2)
-    start_gui(0)
+    out.release()  # Đóng file video
+    
+cap.release()
+cv2.destroyAllWindows()

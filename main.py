@@ -76,4 +76,5 @@ def process(time_step):
 if __name__ == "__main__":
     # Chạy chương trình
     # NHớ thay đổi tham số time_step để thay đổi số lượng điểm môi cần dự đoán
-    process(40)
+    process(20)
+    

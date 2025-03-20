@@ -7,8 +7,13 @@ class TOOL():
         # Initialize the face mesh detector once
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=1)
-        self.MOUTH_INDICES = [78, 95, 191, 80, 81, 82, 13, 311, 312, 310,
-                            415, 308, 324, 318, 402, 317, 14, 87, 178, 88]
+        self.MOUTH_INDICES =  [
+                                0, 37, 39, 40, 185, 267, 269, 270, 409,
+                                78, 80, 81, 82, 191, 291,
+                                61, 91, 84, 17, 314, 321, 375, 405,
+                                13, 14, 87, 178, 312, 319, 325,
+                                88, 95, 146, 181, 308, 310, 311, 317, 402, 415,
+                                ]
     
     def set_input_image(self, input_image):
         self.input_image = input_image
